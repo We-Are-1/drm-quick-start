@@ -78,9 +78,24 @@
 
                                     // Enable more detailed error logging
                                     player.addEventListener('error', (event) => {
-                                        console.error('Player error:', event);
-                                        console.error('Error details:', event.detail);
-                                        showError('Player error: ' + event.detail.message);
+                                        if (isSafari) {
+                                            console.log('Safari DRM Status:', {
+                                                'EME Support': !!window.MediaKeys,
+                                                'FairPlay Support': navigator.requestMediaKeySystemAccess ? true : false,
+                                                'Error Code': event.detail.code,
+                                                'Error Category': event.detail.category,
+                                                'Error Message': event.detail.message
+                                            });
+                                        }
+                                        
+                                        // More specific error message for Safari FairPlay issues
+                                        if (isSafari && event.detail.code === 6010) {
+                                            showError('Please ensure FairPlay DRM is enabled in your Safari settings');
+                                        } else {
+                                            console.warn('Player error:', event.detail.message);
+                                            console.warn('Error details:', event.detail);
+                                            showError(event.detail.message);
+                                        }
                                     });
 
                                     // First fetch the FairPlay certificate if using Safari
@@ -91,14 +106,14 @@
                                             const certResponse = await fetch('https://8d86a98a0a9426a560f8d992.blob.core.windows.net/web/fairplay.cer');
                                             if (!certResponse.ok) throw new Error('Failed to fetch certificate');
                                             fairplayCertificate = new Uint8Array(await certResponse.arrayBuffer());
-                                            console.log('FairPlay certificate loaded successfully');
+                                            console.log('FairPlay certificate loaded successfully', fairplayCertificate);
                                         } catch (error) {
                                             console.error('Error loading FairPlay certificate:', error);
                                             throw error;
                                         }
                                     }
 
-                                    // Configure DRM
+                                    // Configure DRM with updated FairPlay settings
                                     const drmConfig = {
                                         drm: {
                                             servers: {
@@ -115,6 +130,7 @@
                                             },
                                             initDataTransform: (initData, initDataType, drmInfo) => {
                                                 if (isSafari && initDataType === 'skd') {
+                                                    console.log('Transforming FairPlay init data');
                                                     const contentId = shaka.util.FairPlayUtils.contentIdFromInitData(initData);
                                                     const cert = drmInfo.serverCertificate;
                                                     return shaka.util.FairPlayUtils.initDataTransform(initData, contentId, cert);
@@ -123,13 +139,17 @@
                                             }
                                         },
                                         streaming: {
-                                            bufferingGoal: 60,
-                                            rebufferingGoal: 30,
-                                            bufferBehind: 30
+                                            useNativeHlsOnSafari: true,
+                                            alwaysStreamText: true,
+                                            rebufferingGoal: 2
                                         },
-                                        abr: {
-                                            enabled: true,
-                                            defaultBandwidthEstimate: 1000000
+                                        manifest: {
+                                            dash: {
+                                                ignoreMinBufferTime: true
+                                            },
+                                            hls: {
+                                                ignoreMinBufferTime: true
+                                            }
                                         }
                                     };
 
@@ -149,23 +169,60 @@
                                     const token = await tokenResponse.text();
                                     console.log('Token received successfully');
 
-                                    // Register request filter for license requests
+                                    // Register request and response filters for license requests
                                     player.getNetworkingEngine().registerRequestFilter((type, request) => {
                                         if (type === shaka.net.NetworkingEngine.RequestType.LICENSE) {
                                             request.headers['X-AxDRM-Message'] = token;
-                                            console.log('Added license token to request');
+                                            
+                                            if (isSafari) {
+                                                // Add specific headers for FairPlay
+                                                request.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+                                                console.log('Added FairPlay headers to license request');
+                                            }
+                                            
+                                            console.log('License request headers:', request.headers);
                                         }
                                     });
 
+                                    // Add response filter specifically for Safari
+                                    if (isSafari) {
+                                        player.getNetworkingEngine().registerResponseFilter((type, response) => {
+                                            if (type === shaka.net.NetworkingEngine.RequestType.LICENSE) {
+                                                console.log('Processing FairPlay license response');
+                                                // Ensure proper handling of FairPlay license response
+                                                if (response.data) {
+                                                    console.log('License response received');
+                                                }
+                                            }
+                                        });
+                                    }
+
                                     // Use appropriate manifest URL based on browser
                                     const manifestUrl = isSafari ? '${video.hlsUrl}' : '${video.url}';
-                                    console.log('Loading manifest:', manifestUrl);
+                                    console.log('Loading manifest for ' + (isSafari ? 'Safari/HLS' : 'Other/DASH') + ':', manifestUrl);
                                     
                                     try {
+                                        if (isSafari) {
+                                            console.log('Configuring Safari-specific settings');
+                                            player.configure({
+                                                streaming: {
+                                                    useNativeHlsOnSafari: true
+                                                }
+                                            });
+                                        }
+                                        
                                         await player.load(manifestUrl);
                                         console.log('Manifest loaded successfully');
                                     } catch (loadError) {
                                         console.error('Manifest load error:', loadError);
+                                        if (isSafari) {
+                                            console.error('Safari specific error details:', {
+                                                'URL Type': 'HLS',
+                                                'Manifest URL': manifestUrl,
+                                                'Error Type': loadError.name,
+                                                'Error Message': loadError.message
+                                            });
+                                        }
                                         throw loadError;
                                     }
 
@@ -176,10 +233,19 @@
                             }
 
                             function showError(message) {
+                                console.warn('Showing error to user:', message);
                                 const errorDisplay = document.getElementById('error-display');
-                                errorDisplay.textContent = message;
+                                
+                                // Make error messages more user-friendly
+                                let userMessage = message;
+                                if (message.includes('undefined')) {
+                                    userMessage = 'Unable to initialize video playback. Please try refreshing the page.';
+                                } else if (message.includes('FairPlay')) {
+                                    userMessage = 'Please ensure FairPlay DRM is enabled in your Safari settings.';
+                                }
+                                
+                                errorDisplay.textContent = userMessage;
                                 errorDisplay.style.display = 'block';
-                                console.error('Player Error:', message);
                             }
 
                             document.addEventListener('DOMContentLoaded', init);

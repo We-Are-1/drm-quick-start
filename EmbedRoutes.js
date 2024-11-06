@@ -77,18 +77,43 @@
 
                                     shaka.polyfill.installAll();
 
-                                    // Configure DRM based on browser
+                                    // First fetch the FairPlay certificate if using Safari
+                                    let fairplayCertificate;
+                                    if (isSafari) {
+                                        try {
+                                            console.log('Fetching FairPlay certificate...');
+                                            const certResponse = await fetch('https://8d86a98a0a9426a560f8d992.blob.core.windows.net/web/fairplay.cer');
+                                            if (!certResponse.ok) throw new Error('Failed to fetch certificate');
+                                            fairplayCertificate = new Uint8Array(await certResponse.arrayBuffer());
+                                            console.log('FairPlay certificate loaded');
+                                        } catch (error) {
+                                            console.error('Error loading FairPlay certificate:', error);
+                                            throw error;
+                                        }
+                                    }
+
+                                    // Configure DRM
                                     const drmConfig = {
                                         drm: {
                                             servers: {
                                                 'com.widevine.alpha': 'https://drm-widevine-licensing.axprod.net/AcquireLicense',
                                                 'com.microsoft.playready': 'https://drm-playready-licensing.axprod.net/AcquireLicense',
-                                                'com.apple.fps': 'https://drm-fairplay-licensing.axprod.net/AcquireLicense'
+                                                'com.apple.fps.1_0': 'https://drm-fairplay-licensing.axprod.net/AcquireLicense'
                                             },
                                             advanced: {
-                                                'com.apple.fps': {
-                                                    'serverCertificateUri': 'https://developer.axinom.com/certificate/certificate.der'
+                                                'com.apple.fps.1_0': {
+                                                    serverCertificate: fairplayCertificate,
+                                                    persistentStateRequired: true,
+                                                    distinctiveIdentifierRequired: false
                                                 }
+                                            },
+                                            initDataTransform: (initData, initDataType, drmInfo) => {
+                                                if (isSafari && initDataType === 'skd') {
+                                                    const contentId = shaka.util.FairPlayUtils.contentIdFromInitData(initData);
+                                                    const cert = drmInfo.serverCertificate;
+                                                    return shaka.util.FairPlayUtils.initDataTransform(initData, contentId, cert);
+                                                }
+                                                return initData;
                                             }
                                         }
                                     };

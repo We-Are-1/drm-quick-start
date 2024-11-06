@@ -42,10 +42,8 @@
                                 const video = document.getElementById('video');
                                 const player = new shaka.Player(video);
 
-                                // Install built-in polyfills to patch browser incompatibilities.
                                 shaka.polyfill.installAll();
 
-                                // Configure DRM
                                 player.configure({
                                     drm: {
                                         servers: {
@@ -56,21 +54,18 @@
                                 });
 
                                 try {
-                                    // Get the license token
                                     const tokenResponse = await fetch('/api/authorization/${encodeURIComponent(video.name)}');
                                     if (!tokenResponse.ok) {
                                         throw new Error('Failed to get license token');
                                     }
-                                    const token = await tokenResponse;
+                                    const token = await tokenResponse.text();
 
-                                    // Add the token to license requests
                                     player.getNetworkingEngine().registerRequestFilter(function(type, request) {
                                         if (type == shaka.net.NetworkingEngine.RequestType.LICENSE) {
                                             request.headers['X-AxDRM-Message'] = token;
                                         }
                                     });
 
-                                    // Load the manifest
                                     await player.load('${video.url}');
                                     console.log('Video loaded successfully');
                                     

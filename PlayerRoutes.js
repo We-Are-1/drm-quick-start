@@ -115,9 +115,9 @@
                                     const drmConfig = {
                                         drm: {
                                             servers: {
-                                                'com.widevine.alpha': 'https://drm-widevine-licensing.axprod.net/AcquireLicense',
-                                                'com.microsoft.playready': 'https://drm-playready-licensing.axprod.net/AcquireLicense',
-                                                'com.apple.fps.1_0': 'https://drm-fairplay-licensing.axprod.net/AcquireLicense'
+                                                'com.widevine.alpha': 'https://99b94032.drm-widevine-licensing.axprod.net/AcquireLicense',
+                                                'com.microsoft.playready': 'https://99b94032.drm-playready-licensing.axprod.net/AcquireLicense',
+                                                'com.apple.fps.1_0': 'https://99b94032.drm-fairplay-licensing.axprod.net/AcquireLicense'
                                             },
                                             advanced: {
                                                 'com.apple.fps.1_0': {

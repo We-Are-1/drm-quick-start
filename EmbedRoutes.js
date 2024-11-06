@@ -48,7 +48,6 @@
                                 const video = document.getElementById('video');
                                 const errorDisplay = document.getElementById('error-display');
                                 
-                                // Check browser support
                                 if (!shaka.Player.isBrowserSupported()) {
                                     showError('Browser not supported for DRM playback');
                                     return;
@@ -57,16 +56,13 @@
                                 try {
                                     const player = new shaka.Player(video);
                                     
-                                    // Error handling
                                     player.addEventListener('error', (event) => {
                                         console.error('Player error:', event.detail);
                                         showError('Player error: ' + event.detail.message);
                                     });
 
-                                    // Install built-in polyfills
                                     shaka.polyfill.installAll();
 
-                                    // Configure DRM based on browser
                                     const drmConfig = {
                                         drm: {
                                             servers: {
@@ -93,8 +89,8 @@
                                         throw new Error('Failed to get license token: ' + tokenResponse.status);
                                     }
                                     
-                                    const token = await tokenResponse;
-                                    console.log('Token received:', token.substring(0, 50) + '...');
+                                    const token = await tokenResponse.text();
+                                    console.log('Token received');
 
                                     player.getNetworkingEngine().registerRequestFilter((type, request) => {
                                         if (type === shaka.net.NetworkingEngine.RequestType.LICENSE) {
@@ -125,7 +121,6 @@
                                 console.error('Player Error:', message);
                             }
 
-                            // Initialize on DOM load
                             document.addEventListener('DOMContentLoaded', init);
                         </script>
                     </body>

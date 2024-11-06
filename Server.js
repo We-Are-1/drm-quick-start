@@ -22,13 +22,40 @@
         credentials: true
     };
 
-    let embedRoutes = require("./EmbedRoutes");
-    app.use("/embed", embedRoutes.createRouter());
-    
     // Apply CORS to all routes
     app.use(cors(corsOptions));
 
-    // Rest of your existing code...
+    // We disable etag as it causes API calls to be cached even with Cache-Control: no-cache.
     app.disable("etag");
-    // ... other routes
+
+    // Load all required modules
+    let catalogApi = require("./CatalogApi");
+    let entitlementService = require("./EntitlementService");
+    let playerRoutes = require("./PlayerRoutes");
+    let embedRoutes = require("./EmbedRoutes");  // Add this line
+
+    // At /, we serve the website folder as static resources.
+    app.use(express.static(__dirname + '/Website'));
+
+    // At /api/catalog is the catalog API that provides data for the frontend.
+    app.use("/api/catalog", catalogApi.createRouter());
+
+    // At /api/authorization is the Entitlement Service.
+    app.use("/api/authorization", entitlementService.createRouter());
+
+    // Player routes for web viewing
+    app.use("/player", playerRoutes.createRouter());
+
+    // Embed routes for iframe embedding
+    app.use("/embed", embedRoutes.createRouter());  // Add this line
+
+    app.listen(port, () => {
+        console.log(`Server is running on port ${port}`);
+        console.log(`Environment: ${process.env.NODE_ENV}`);
+        if (process.env.NODE_ENV === 'production') {
+            console.log(`Application is live at ${process.env.RENDER_EXTERNAL_URL || 'your-render-url'}`);
+        } else {
+            console.log(`Application is available at http://localhost:${port}`);
+        }
+    });
 })();

@@ -66,7 +66,8 @@
                                     // Add the token to license requests
                                     player.getNetworkingEngine().registerRequestFilter(function(type, request) {
                                         if (type == shaka.net.NetworkingEngine.RequestType.LICENSE) {
-                                            request.headers['X-AxDRM-Message'] = token;
+                                            const cleanToken = token.replace(/^["'](.+)["']$/, '$1');
+                                            request.headers['X-AxDRM-Message'] = cleanToken;
                                         }
                                     });
 

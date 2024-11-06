@@ -33,7 +33,7 @@
                 }
 
                 if (video.licenseToken) {
-                    response.json(video.licenseToken);
+                    response.send(video.licenseToken);
                     return;
                 }
 

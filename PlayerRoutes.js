@@ -51,29 +51,10 @@
                                 border-radius: 5px;
                                 z-index: 1000;
                             }
-                            #play-prompt {
-                                display: none;
-                                position: fixed;
-                                top: 50%;
-                                left: 50%;
-                                transform: translate(-50%, -50%);
-                                background: rgba(0,0,0,0.5);
-                                color: white;
-                                padding: 20px;
-                                border-radius: 5px;
-                                cursor: pointer;
-                                font-family: Arial, sans-serif;
-                                transition: opacity 0.3s;
-                                z-index: 1000;
-                            }
-                            #play-prompt:hover {
-                                background: rgba(0,0,0,0.7);
-                            }
                         </style>
                     </head>
                     <body>
                         <video id="video" controls playsinline></video>
-                        <div id="play-prompt">Click to play</div>
                         <script>
                             async function init() {
                                 const video = document.getElementById('video');
@@ -181,41 +162,6 @@
                                     try {
                                         await player.load(manifestUrl);
                                         console.log('Manifest loaded successfully');
-
-                                        // Try to play
-                                        try {
-                                            await video.play();
-                                            console.log('Playback started');
-                                        } catch (playError) {
-                                            console.log('Auto-play prevented:', playError);
-                                            // Show play prompt
-                                            const playPrompt = document.getElementById('play-prompt');
-                                            playPrompt.style.display = 'block';
-                                            
-                                            // Add click handler to start playback
-                                            playPrompt.onclick = async () => {
-                                                try {
-                                                    await video.play();
-                                                    playPrompt.style.display = 'none';
-                                                } catch (error) {
-                                                    console.error('Play error:', error);
-                                                    showError('Failed to start playback');
-                                                }
-                                            };
-                                            
-                                            // Also allow clicking anywhere to play
-                                            document.body.onclick = async () => {
-                                                if (playPrompt.style.display === 'block') {
-                                                    try {
-                                                        await video.play();
-                                                        playPrompt.style.display = 'none';
-                                                        document.body.onclick = null; // Remove click handler
-                                                    } catch (error) {
-                                                        console.error('Play error:', error);
-                                                    }
-                                                }
-                                            };
-                                        }
                                     } catch (loadError) {
                                         console.error('Manifest load error:', loadError);
                                         throw loadError;

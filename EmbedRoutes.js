@@ -48,7 +48,10 @@
                                 const video = document.getElementById('video');
                                 const errorDisplay = document.getElementById('error-display');
                                 
-                                // Check browser support
+                                // Check if it's Safari
+                                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                                console.log('Browser detected:', isSafari ? 'Safari' : 'Other');
+
                                 if (!shaka.Player.isBrowserSupported()) {
                                     showError('Browser not supported for DRM playback');
                                     return;
@@ -57,13 +60,11 @@
                                 try {
                                     const player = new shaka.Player(video);
                                     
-                                    // Error handling
                                     player.addEventListener('error', (event) => {
                                         console.error('Player error:', event.detail);
                                         showError('Player error: ' + event.detail.message);
                                     });
 
-                                    // Install built-in polyfills
                                     shaka.polyfill.installAll();
 
                                     // Configure DRM based on browser
@@ -76,7 +77,7 @@
                                             },
                                             advanced: {
                                                 'com.apple.fps': {
-                                                    'serverCertificateUri': 'https://developer.axinom.com/certificate/certificate.der'
+                                                    serverCertificate: await getFairPlayCertificate()
                                                 }
                                             }
                                         }
@@ -94,7 +95,7 @@
                                     }
                                     
                                     const token = await tokenResponse.text();
-                                    console.log('Token received:', token.substring(0, 50) + '...');
+                                    console.log('Token received');
 
                                     player.getNetworkingEngine().registerRequestFilter((type, request) => {
                                         if (type === shaka.net.NetworkingEngine.RequestType.LICENSE) {
@@ -103,8 +104,10 @@
                                         }
                                     });
 
-                                    console.log('Loading manifest:', '${video.url}');
-                                    await player.load('${video.url}');
+                                    // Use HLS URL for Safari, DASH for others
+                                    const manifestUrl = isSafari ? '${video.hlsUrl}' : '${video.url}';
+                                    console.log('Loading manifest:', manifestUrl);
+                                    await player.load(manifestUrl);
                                     console.log('Manifest loaded successfully');
 
                                     video.play().catch(error => {
@@ -118,6 +121,17 @@
                                 }
                             }
 
+                            async function getFairPlayCertificate() {
+                                try {
+                                    const response = await fetch('https://developer.axinom.com/certificate/certificate.der');
+                                    const cert = await response.arrayBuffer();
+                                    return new Uint8Array(cert);
+                                } catch (error) {
+                                    console.error('Error loading FairPlay certificate:', error);
+                                    throw error;
+                                }
+                            }
+
                             function showError(message) {
                                 const errorDisplay = document.getElementById('error-display');
                                 errorDisplay.textContent = message;
@@ -125,7 +139,6 @@
                                 console.error('Player Error:', message);
                             }
 
-                            // Initialize on DOM load
                             document.addEventListener('DOMContentLoaded', init);
                         </script>
                     </body>

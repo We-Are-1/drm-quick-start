@@ -21,7 +21,8 @@
                 res.header("Content-Security-Policy", 
                     "default-src 'self'; " +
                     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; " +
-                    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
+                    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
+                    "font-src 'self' https://fonts.gstatic.com; " +
                     "media-src 'self' blob: https://*.windows.net; " + 
                     "connect-src 'self' https://*.axprod.net https://*.windows.net https://developer.axinom.com; " +
                     "img-src 'self' data: blob:;"
@@ -38,10 +39,17 @@
                             body { margin: 0; padding: 0; background: #000; }
                             #video { width: 100%; height: 100vh; }
                             .error-message { 
+                                position: fixed;
+                                top: 50%;
+                                left: 50%;
+                                transform: translate(-50%, -50%);
                                 color: white; 
                                 padding: 20px; 
                                 text-align: center; 
-                                font-family: Arial, sans-serif; 
+                                font-family: Arial, sans-serif;
+                                background: rgba(0,0,0,0.8);
+                                border-radius: 5px;
+                                z-index: 1000;
                             }
                         </style>
                     </head>
@@ -55,24 +63,23 @@
                                 const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
                                 console.log('Browser detected:', isSafari ? 'Safari' : 'Other');
 
-                                if (!shaka.Player.isBrowserSupported()) {
-                                    console.error('Browser not supported for DRM playback');
-                                    return;
-                                }
-
                                 try {
+                                    // Install polyfills first
+                                    await shaka.polyfill.installAll();
+
+                                    // Check browser support after polyfills
+                                    if (!shaka.Player.isBrowserSupported()) {
+                                        throw new Error('Browser not supported for DRM playback');
+                                    }
+
                                     const player = new shaka.Player(video);
 
-                                    // Error handling
+                                    // Enable more detailed error logging
                                     player.addEventListener('error', (event) => {
-                                        console.error('Player error:', event.detail);
-                                        const errorDiv = document.createElement('div');
-                                        errorDiv.className = 'error-message';
-                                        errorDiv.textContent = 'Player error: ' + event.detail.message;
-                                        document.body.appendChild(errorDiv);
+                                        console.error('Player error:', event);
+                                        console.error('Error details:', event.detail);
+                                        showError('Player error: ' + event.detail.message);
                                     });
-
-                                    shaka.polyfill.installAll();
 
                                     // First fetch the FairPlay certificate if using Safari
                                     let fairplayCertificate;
@@ -82,7 +89,7 @@
                                             const certResponse = await fetch('https://8d86a98a0a9426a560f8d992.blob.core.windows.net/web/fairplay.cer');
                                             if (!certResponse.ok) throw new Error('Failed to fetch certificate');
                                             fairplayCertificate = new Uint8Array(await certResponse.arrayBuffer());
-                                            console.log('FairPlay certificate loaded');
+                                            console.log('FairPlay certificate loaded successfully');
                                         } catch (error) {
                                             console.error('Error loading FairPlay certificate:', error);
                                             throw error;
@@ -112,21 +119,37 @@
                                                 }
                                                 return initData;
                                             }
+                                        },
+                                        streaming: {
+                                            bufferingGoal: 60,
+                                            rebufferingGoal: 30,
+                                            bufferBehind: 30
+                                        },
+                                        abr: {
+                                            enabled: true,
+                                            defaultBandwidthEstimate: 1000000
                                         }
                                     };
 
+                                    // Configure player
                                     player.configure(drmConfig);
 
+                                    // Get license token
                                     console.log('Fetching license token...');
-                                    const tokenResponse = await fetch('/api/authorization/${encodeURIComponent(video.name)}');
+                                    const tokenResponse = await fetch('/api/authorization/${encodeURIComponent(video.name)}', {
+                                        credentials: 'include'
+                                    });
+                                    
                                     if (!tokenResponse.ok) {
-                                        throw new Error('Failed to get license token');
+                                        throw new Error('Failed to get license token: ' + tokenResponse.status);
                                     }
+                                    
                                     const token = await tokenResponse.text();
-                                    console.log('Token received');
+                                    console.log('Token received successfully');
 
-                                    player.getNetworkingEngine().registerRequestFilter(function(type, request) {
-                                        if (type == shaka.net.NetworkingEngine.RequestType.LICENSE) {
+                                    // Register request filter for license requests
+                                    player.getNetworkingEngine().registerRequestFilter((type, request) => {
+                                        if (type === shaka.net.NetworkingEngine.RequestType.LICENSE) {
                                             request.headers['X-AxDRM-Message'] = token;
                                             console.log('Added license token to request');
                                         }
@@ -136,20 +159,35 @@
                                     const manifestUrl = isSafari ? '${video.hlsUrl}' : '${video.url}';
                                     console.log('Loading manifest:', manifestUrl);
                                     
-                                    await player.load(manifestUrl);
-                                    console.log('Video loaded successfully');
-                                    
-                                    video.play().catch(error => {
-                                        console.log('Auto-play prevented:', error);
-                                    });
-                                    
+                                    try {
+                                        await player.load(manifestUrl);
+                                        console.log('Manifest loaded successfully');
+
+                                        // Try to play
+                                        try {
+                                            await video.play();
+                                            console.log('Playback started');
+                                        } catch (playError) {
+                                            console.log('Auto-play prevented:', playError);
+                                            showError('Click to play the video');
+                                        }
+                                    } catch (loadError) {
+                                        console.error('Manifest load error:', loadError);
+                                        throw loadError;
+                                    }
+
                                 } catch (error) {
-                                    console.error('Error loading video:', error);
-                                    const errorDiv = document.createElement('div');
-                                    errorDiv.className = 'error-message';
-                                    errorDiv.textContent = 'Error loading video. Please check console for details.';
-                                    document.body.appendChild(errorDiv);
+                                    console.error('Setup error:', error);
+                                    showError(error.message || 'Failed to initialize player');
                                 }
+                            }
+
+                            function showError(message) {
+                                const errorDiv = document.createElement('div');
+                                errorDiv.className = 'error-message';
+                                errorDiv.textContent = message;
+                                document.body.appendChild(errorDiv);
+                                console.error('Player Error:', message);
                             }
 
                             document.addEventListener('DOMContentLoaded', init);

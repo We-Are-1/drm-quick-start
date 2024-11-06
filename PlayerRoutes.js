@@ -102,6 +102,10 @@
                                         try {
                                             console.log('Fetching FairPlay certificate...');
                                             const certResponse = await fetch('https://8d86a98a0a9426a560f8d992.blob.core.windows.net/web/fairplay.cer');
+                                                headers: {
+                                                    'X-AxDRM-Message': token  // Add your authentication token if required
+                                                }
+                                            });                                            
                                             if (!certResponse.ok) throw new Error('Failed to fetch certificate');
                                             fairplayCertificate = new Uint8Array(await certResponse.arrayBuffer());
                                             console.log('FairPlay certificate loaded successfully', fairplayCertificate);

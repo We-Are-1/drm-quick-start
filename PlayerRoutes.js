@@ -61,13 +61,12 @@
                                     if (!tokenResponse.ok) {
                                         throw new Error('Failed to get license token');
                                     }
-                                    const token = await tokenResponse.text();
+                                    const token = await tokenResponse;
 
                                     // Add the token to license requests
                                     player.getNetworkingEngine().registerRequestFilter(function(type, request) {
                                         if (type == shaka.net.NetworkingEngine.RequestType.LICENSE) {
-                                            const cleanToken = token.replace(/^["'](.+)["']$/, '$1');
-                                            request.headers['X-AxDRM-Message'] = cleanToken;
+                                            request.headers['X-AxDRM-Message'] = token;
                                         }
                                     });
 

@@ -1,34 +1,37 @@
 (function () {
-	"use strict";
+    "use strict";
 
-	let express = require("express");
-	let videoDatabase = require("./VideoDatabase");
+    require('dotenv').config();
+    let express = require("express");
+    let videoDatabase = require("./VideoDatabase");
 
-	module.exports = {
-		"createRouter": function createRouter() {
-			let router = express.Router();
+    module.exports = {
+        "createRouter": function createRouter() {
+            let router = express.Router();
 
-			// This API call returns a JSON list with basic info about all the videos on the website.
-			router.get("/videos", function processGet(request, response) {
-				// We do not want our API calls to get cached.
-				response.header("Cache-Control", "no-cache");
-				
-				let videoList = [];
+            router.get("/videos", function processGet(request, response) {
+                response.header("Cache-Control", "no-cache");
+                
+                // Optional: Basic API key check if configured
+                const apiKey = request.headers['x-api-key'];
+                if (process.env.CATALOG_API_KEY && apiKey !== process.env.CATALOG_API_KEY) {
+                    return response.status(401).json({ error: "Unauthorized" });
+                }
 
-				videoDatabase.getAllVideos().forEach(function mapVideo(video) {
-					// Only name, URL and an optional list tags are exposed to the browser.
-					// Everything else is for internal use only.
-					videoList.push({
-						"name": video.name,
-						"url": video.url,
-						"tags": video.tags
-					});
-				});				
+                let videoList = [];
 
-				response.json(videoList);
-			});
+                videoDatabase.getAllVideos().forEach(function mapVideo(video) {
+                    videoList.push({
+                        "name": video.name,
+                        "url": video.url,
+                        "tags": video.tags
+                    });
+                });                
 
-			return router;
-		}
-	};
+                response.json(videoList);
+            });
+
+            return router;
+        }
+    };
 })();

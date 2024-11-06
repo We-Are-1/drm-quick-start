@@ -36,22 +36,39 @@
                         </style>
                     </head>
                     <body>
-                        <video id="video" controls></video>
+                        <video id="video" controls playsinline></video>
                         <script>
                             async function init() {
                                 const video = document.getElementById('video');
                                 const player = new shaka.Player(video);
 
+                                // Check if Safari
+                                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                                console.log('Browser detected:', isSafari ? 'Safari' : 'Other');
+
                                 shaka.polyfill.installAll();
 
-                                player.configure({
+                                // Configure DRM based on browser
+                                const drmConfig = {
                                     drm: {
                                         servers: {
                                             'com.widevine.alpha': 'https://drm-widevine-licensing.axprod.net/AcquireLicense',
-                                            'com.microsoft.playready': 'https://drm-playready-licensing.axprod.net/AcquireLicense'
+                                            'com.microsoft.playready': 'https://drm-playready-licensing.axprod.net/AcquireLicense',
+                                            'com.apple.fps': 'https://drm-fairplay-licensing.axprod.net/AcquireLicense'
                                         }
                                     }
-                                });
+                                };
+
+                                // Add FairPlay configuration for Safari
+                                if (isSafari) {
+                                    drmConfig.drm.advanced = {
+                                        'com.apple.fps': {
+                                            'serverCertificateUri': 'https://developer.axinom.com/certificate/certificate.der'
+                                        }
+                                    };
+                                }
+
+                                player.configure(drmConfig);
 
                                 try {
                                     const tokenResponse = await fetch('/api/authorization/${encodeURIComponent(video.name)}');
@@ -66,7 +83,11 @@
                                         }
                                     });
 
-                                    await player.load('${video.url}');
+                                    // Use appropriate manifest URL based on browser
+                                    const manifestUrl = isSafari ? '${video.hlsUrl}' : '${video.url}';
+                                    console.log('Loading manifest:', manifestUrl);
+
+                                    await player.load(manifestUrl);
                                     console.log('Video loaded successfully');
                                     
                                 } catch (error) {

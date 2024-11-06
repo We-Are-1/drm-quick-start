@@ -17,21 +17,6 @@
                     return res.status(404).send("Video not found");
                 }
 
-                // Add CSP headers
-                res.header("Content-Security-Policy", 
-                    "default-src 'self'; " +
-                    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; " +
-                    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
-                    "media-src 'self' blob: https://*.windows.net; " + 
-                    "connect-src 'self' https://*.axprod.net https://*.windows.net https://developer.axinom.com; " +
-                    "img-src 'self' data: blob:;"
-                );
-
-                // Check if Safari
-                const userAgent = req.headers['user-agent'];
-                const isSafari = /^((?!chrome|android).)*safari/i.test(userAgent);
-                const manifestUrl = isSafari ? video.hlsUrl || video.url : video.url;
-
                 res.send(`
                     <!DOCTYPE html>
                     <html>
@@ -60,52 +45,42 @@
                         <div id="error-display"></div>
                         <script>
                             async function init() {
+                                const video = document.getElementById('video');
+                                const errorDisplay = document.getElementById('error-display');
+                                
+                                // Check browser support
+                                if (!shaka.Player.isBrowserSupported()) {
+                                    showError('Browser not supported for DRM playback');
+                                    return;
+                                }
+
                                 try {
-                                    const video = document.getElementById('video');
-                                    const errorDisplay = document.getElementById('error-display');
-                                    
-                                    // Check if it's Safari
-                                    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-                                    console.log('Browser detected:', isSafari ? 'Safari' : 'Other');
-
-                                    if (!shaka.Player.isBrowserSupported()) {
-                                        showError('Browser not supported for DRM playback');
-                                        return;
-                                    }
-
                                     const player = new shaka.Player(video);
                                     
+                                    // Error handling
                                     player.addEventListener('error', (event) => {
                                         console.error('Player error:', event.detail);
                                         showError('Player error: ' + event.detail.message);
                                     });
 
+                                    // Install built-in polyfills
                                     shaka.polyfill.installAll();
 
-                                    // Configure DRM
+                                    // Configure DRM based on browser
                                     const drmConfig = {
                                         drm: {
                                             servers: {
                                                 'com.widevine.alpha': 'https://drm-widevine-licensing.axprod.net/AcquireLicense',
                                                 'com.microsoft.playready': 'https://drm-playready-licensing.axprod.net/AcquireLicense',
                                                 'com.apple.fps': 'https://drm-fairplay-licensing.axprod.net/AcquireLicense'
+                                            },
+                                            advanced: {
+                                                'com.apple.fps': {
+                                                    'serverCertificateUri': 'https://developer.axinom.com/certificate/certificate.der'
+                                                }
                                             }
                                         }
                                     };
-
-                                    if (isSafari) {
-                                        try {
-                                            const certResponse = await fetch('https://developer.axinom.com/certificate/certificate.der');
-                                            const certArrayBuffer = await certResponse.arrayBuffer();
-                                            drmConfig.drm.advanced = {
-                                                'com.apple.fps': {
-                                                    serverCertificate: new Uint8Array(certArrayBuffer)
-                                                }
-                                            };
-                                        } catch (error) {
-                                            console.error('Error loading FairPlay certificate:', error);
-                                        }
-                                    }
 
                                     player.configure(drmConfig);
 
@@ -119,7 +94,7 @@
                                     }
                                     
                                     const token = await tokenResponse.text();
-                                    console.log('Token received');
+                                    console.log('Token received:', token.substring(0, 50) + '...');
 
                                     player.getNetworkingEngine().registerRequestFilter((type, request) => {
                                         if (type === shaka.net.NetworkingEngine.RequestType.LICENSE) {
@@ -128,9 +103,8 @@
                                         }
                                     });
 
-                                    // Use appropriate manifest URL
-                                    console.log('Loading manifest:', '${manifestUrl}');
-                                    await player.load('${manifestUrl}');
+                                    console.log('Loading manifest:', '${video.url}');
+                                    await player.load('${video.url}');
                                     console.log('Manifest loaded successfully');
 
                                     video.play().catch(error => {
@@ -151,6 +125,7 @@
                                 console.error('Player Error:', message);
                             }
 
+                            // Initialize on DOM load
                             document.addEventListener('DOMContentLoaded', init);
                         </script>
                     </body>

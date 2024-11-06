@@ -22,6 +22,9 @@
         credentials: true
     };
 
+    let embedRoutes = require("./EmbedRoutes");
+    app.use("/embed", embedRoutes.createRouter());
+    
     // Apply CORS to all routes
     app.use(cors(corsOptions));
 

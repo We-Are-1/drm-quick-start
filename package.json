@@ -1,34 +1,22 @@
 {
-  "name": "drm-quick-start",
+  "name": "axinom-drm-player",
   "version": "1.0.0",
-  "description": "Sample project and quick start guide for Axinom DRM",
+  "description": "Axinom DRM player service",
   "main": "Server.js",
-  "author": "Axinom",
-  "license": "MIT",
-  "repository": "https://github.com/Axinom/drm-quick-start",
   "dependencies": {
-    "dotenv": "^16.3.1",
     "commander": "^2.9.0",
-    "express": "^4.13.4",
-    "jsonwebtoken": "^9.0.0",
-    "moment": "^2.13.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^7.1.9",
+    "moment": "^2.29.4",
     "node-uuid": "^1.4.7",
     "xmlhttprequest": "^1.8.0"
   },
-  "devDependencies": {
-    "eslint": "^5.11.1",
-    "eslint-config-axinom": "^1.0.3"
+  "scripts": {
+    "start": "node Server.js"
   },
-  "eslintConfig": {
-    "extends": "axinom",
-    "rules": {
-      "new-cap": [
-        2,
-        {
-          "capIsNew": false
-        }
-      ],
-      "no-process-env": 0
-    }
+  "engines": {
+    "node": "18.x"
   }
 }

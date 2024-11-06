@@ -17,6 +17,16 @@
                     return res.status(404).send("Video not found");
                 }
 
+                // Add CSP headers
+                res.header("Content-Security-Policy", 
+                    "default-src 'self'; " +
+                    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; " +
+                    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
+                    "media-src 'self' blob: https://*.windows.net; " + 
+                    "connect-src 'self' https://*.axprod.net https://*.windows.net https://developer.axinom.com; " +
+                    "img-src 'self' data: blob:;"
+                );
+
                 res.send(`
                     <!DOCTYPE html>
                     <html>
@@ -48,6 +58,10 @@
                                 const video = document.getElementById('video');
                                 const errorDisplay = document.getElementById('error-display');
                                 
+                                // Check if Safari
+                                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                                console.log('Browser detected:', isSafari ? 'Safari' : 'Other');
+
                                 if (!shaka.Player.isBrowserSupported()) {
                                     showError('Browser not supported for DRM playback');
                                     return;
@@ -63,6 +77,7 @@
 
                                     shaka.polyfill.installAll();
 
+                                    // Configure DRM based on browser
                                     const drmConfig = {
                                         drm: {
                                             servers: {
@@ -99,8 +114,11 @@
                                         }
                                     });
 
-                                    console.log('Loading manifest:', '${video.url}');
-                                    await player.load('${video.url}');
+                                    // Use appropriate manifest URL based on browser
+                                    const manifestUrl = isSafari ? '${video.hlsUrl}' : '${video.url}';
+                                    console.log('Loading manifest:', manifestUrl);
+                                    
+                                    await player.load(manifestUrl);
                                     console.log('Manifest loaded successfully');
 
                                     video.play().catch(error => {

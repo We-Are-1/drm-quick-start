@@ -5,33 +5,27 @@
 
     require('dotenv').config();
     const port = process.env.PORT || 8120;
+    const cors = require('cors');
+    const express = require("express");
+    const app = express();
 
-    let express = require("express");
-    let app = express();
-    
-    // Existing requires
-    let catalogApi = require("./CatalogApi");
-    let entitlementService = require("./EntitlementService");
-    // Add this new require
-    let playerRoutes = require("./PlayerRoutes");
+    // CORS configuration
+    const corsOptions = {
+        origin: [
+            'https://weare1media.com',
+            'https://*.weare1media.com',  // Allow all subdomains
+            'http://localhost:8120',      // For local testing
+            'https://axinom-drm-player.onrender.com'
+        ],
+        methods: ['GET', 'POST'],
+        allowedHeaders: ['Content-Type', 'X-AxDRM-Message'],
+        credentials: true
+    };
 
+    // Apply CORS to all routes
+    app.use(cors(corsOptions));
+
+    // Rest of your existing code...
     app.disable("etag");
-
-    // Existing routes
-    app.use(express.static(__dirname + '/Website'));
-    app.use("/api/catalog", catalogApi.createRouter());
-    app.use("/api/authorization", entitlementService.createRouter());
-    
-    // Add this new route
-    app.use("/player", playerRoutes.createRouter());
-
-    app.listen(port, () => {
-        console.log(`Server is running on port ${port}`);
-        console.log(`Environment: ${process.env.NODE_ENV}`);
-        if (process.env.NODE_ENV === 'production') {
-            console.log(`Application is live at ${process.env.RENDER_EXTERNAL_URL || 'your-render-url'}`);
-        } else {
-            console.log(`Application is available at http://localhost:${port}`);
-        }
-    });
+    // ... other routes
 })();

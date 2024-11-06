@@ -1,3 +1,4 @@
+// PlayerRoutes.js
 (function () {
     "use strict";
 
@@ -54,10 +55,11 @@
                         </style>
                     </head>
                     <body>
-                        <video id="video" controls playsinline></video>
+                        <video id="video" controls playsinline autoplay="false"></video>
                         <script>
                             async function init() {
                                 const video = document.getElementById('video');
+                                video.autoplay = false;  // Explicitly prevent autoplay
                                 
                                 // Check if Safari
                                 const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
@@ -74,6 +76,32 @@
 
                                     const player = new shaka.Player(video);
 
+                                    // Player configuration for proper playback behavior
+                                    const playerConfig = {
+                                        streaming: {
+                                            autoplay: false,
+                                            useNativeHlsOnSafari: true,
+                                            alwaysStreamText: true,
+                                            rebufferingGoal: 2,
+                                            bufferingGoal: 10,
+                                            bufferBehind: 30,
+                                            smallGapLimit: 1.5,
+                                            jumpLargeGaps: true
+                                        },
+                                        manifest: {
+                                            dash: {
+                                                ignoreMinBufferTime: true,
+                                                autoCorrectDrift: true
+                                            },
+                                            hls: {
+                                                ignoreMinBufferTime: true
+                                            }
+                                        }
+                                    };
+
+                                    // Configure player with streaming settings
+                                    player.configure(playerConfig);
+
                                     // Enable more detailed error logging
                                     player.addEventListener('error', (event) => {
                                         if (isSafari) {
@@ -86,7 +114,6 @@
                                             });
                                         }
                                         
-                                        // More specific error message for Safari FairPlay issues
                                         if (isSafari && event.detail.code === 6010) {
                                             showError('Please ensure FairPlay DRM is enabled in your Safari settings');
                                         } else {
@@ -135,23 +162,10 @@
                                                 }
                                                 return initData;
                                             }
-                                        },
-                                        streaming: {
-                                            useNativeHlsOnSafari: true,
-                                            alwaysStreamText: true,
-                                            rebufferingGoal: 2
-                                        },
-                                        manifest: {
-                                            dash: {
-                                                ignoreMinBufferTime: true
-                                            },
-                                            hls: {
-                                                ignoreMinBufferTime: true
-                                            }
                                         }
                                     };
 
-                                    // Configure player
+                                    // Configure player with DRM settings
                                     player.configure(drmConfig);
 
                                     // Get license token
@@ -173,7 +187,6 @@
                                             request.headers['X-AxDRM-Message'] = token;
                                             
                                             if (isSafari) {
-                                                // Add specific headers for FairPlay
                                                 request.headers['Content-Type'] = 'application/x-www-form-urlencoded';
                                                 console.log('Added FairPlay headers to license request');
                                             }
@@ -187,7 +200,6 @@
                                         player.getNetworkingEngine().registerResponseFilter((type, response) => {
                                             if (type === shaka.net.NetworkingEngine.RequestType.LICENSE) {
                                                 console.log('Processing FairPlay license response');
-                                                // Ensure proper handling of FairPlay license response
                                                 if (response.data) {
                                                     console.log('License response received');
                                                 }
@@ -200,17 +212,23 @@
                                     console.log('Loading manifest for ' + (isSafari ? 'Safari/HLS' : 'Other/DASH') + ':', manifestUrl);
                                     
                                     try {
+                                        await player.load(manifestUrl);
+                                        console.log('Manifest loaded successfully');
+
+                                        // Handle autoplay for Safari
                                         if (isSafari) {
-                                            console.log('Configuring Safari-specific settings');
-                                            player.configure({
-                                                streaming: {
-                                                    useNativeHlsOnSafari: true
+                                            video.addEventListener('play', () => {
+                                                const playPromise = video.play();
+                                                if (playPromise !== undefined) {
+                                                    playPromise.then(() => {
+                                                        console.log('Playback started by user interaction');
+                                                    }).catch(error => {
+                                                        console.log('Auto-play prevented, waiting for user interaction:', error);
+                                                        // Expected behavior, no need to show error
+                                                    });
                                                 }
                                             });
                                         }
-                                        
-                                        await player.load(manifestUrl);
-                                        console.log('Manifest loaded successfully');
                                     } catch (loadError) {
                                         console.error('Manifest load error:', loadError);
                                         if (isSafari) {
@@ -234,7 +252,6 @@
                                 const errorDiv = document.createElement('div');
                                 errorDiv.className = 'error-message';
                                 
-                                // Make error messages more user-friendly
                                 let userMessage = message;
                                 if (message.includes('undefined')) {
                                     userMessage = 'Unable to initialize video playback. Please try refreshing the page.';
@@ -258,3 +275,10 @@
         }
     };
 })();
+
+// EmbedRoutes.js 
+// (Same content as PlayerRoutes.js but with these changes in the HTML template:)
+// - Different styling (body margin/padding/background)
+// - Different video element styling (width/height)
+// - Different error message styling
+// The JavaScript code remains exactly the same

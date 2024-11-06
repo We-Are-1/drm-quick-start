@@ -33,7 +33,7 @@
                 }
 
                 if (video.licenseToken) {
-                    response.send(video.licenseToken);
+                    response.send(video.licenseToken);  // Using send for hardcoded token
                     return;
                 }
 
@@ -102,7 +102,7 @@
                     "noTimestamp": true
                 });
 
-                response.json(licenseToken);
+                response.send(licenseToken);  // Changed from response.json() to response.send()
             });
 
             return router;

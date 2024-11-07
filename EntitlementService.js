@@ -56,31 +56,20 @@
                     "type": "entitlement_message",
                     "version": 2,
                     "license": {
-                        "start_datetime": validFrom.toISOString(),
-                        "expiration_datetime": validTo.toISOString(),
-                        "duration": 3600,  // 1 hour duration
-                        "allow_persistence": true
+                        "duration": 3600
                     },
-
                     "content_keys_source": {
                         "inline": []
                     },
-                    
                     "content_key_usage_policies": [
                         {
-                            "name": "Policy A",
+                            "name": "Policy",
                             "widevine": {
-                                "device_security_level": "HW_SECURE_CRYPTO",  // Good balance for Android 12+
-                                "hdcp": "2.0",                               // Keep HDCP 2.0 for good protection
-                                "cgms_a": "copy_never",                      // Prevent copying
-                                "require_hdcp_match": true,                  // Enforce HDCP
-                                "disable_analog_output": true                // Prevent analog capture
+                                "device_security_level": "HW_SECURE_CRYPTO",
+                                "hdcp": "2.0"
                             },
                             "playready": {
-                                "min_device_security_level": 2000,          // Keep standard security
-                                "play_enablers": [
-                                    "786627D8-C2A6-44BE-8F88-08AE255B01A7"
-                                ]
+                                "min_device_security_level": 2000
                             }
                         }
                     ]
@@ -89,7 +78,7 @@
                 video.keys.forEach(function (key) {
                     let inlineKey = {
                         "id": key.keyId,
-                        "usage_policy": "Policy A"        
+                        "usage_policy": "Policy"        
                     } 
 
                     message.content_keys_source.inline.push(inlineKey);

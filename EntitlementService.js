@@ -70,12 +70,14 @@
                         {
                             "name": "Policy A",
                             "widevine": {
-                                "device_security_level": "HW_SECURE_CRYPTO",  // Hardware security that works on more devices
-                                "hdcp": "2.0",                               // Standard HDCP requirement
-                                "cgms_a": "copy_never"                       // Prevent copying
+                                "device_security_level": "HW_SECURE_CRYPTO",  // Good balance for Android 12+
+                                "hdcp": "2.0",                               // Keep HDCP 2.0 for good protection
+                                "cgms_a": "copy_never",                      // Prevent copying
+                                "require_hdcp_match": true,                  // Enforce HDCP
+                                "disable_analog_output": true                // Prevent analog capture
                             },
                             "playready": {
-                                "min_device_security_level": 2000,          // Software-based security
+                                "min_device_security_level": 2000,          // Keep standard security
                                 "play_enablers": [
                                     "786627D8-C2A6-44BE-8F88-08AE255B01A7"
                                 ]

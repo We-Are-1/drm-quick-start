@@ -65,15 +65,8 @@
                         {
                             "name": "DefaultPolicy",
                             "widevine": {
-                                "device_security_level": "SW_SECURE_CRYPTO",  // Allow software-level security
-                                "hdcp": "NONE",                              // Remove HDCP requirement
-                                "video_resolution_constraints": [
-                                    {
-                                        "min_resolution": "SD",
-                                        "max_resolution": "UHD2",
-                                        "security_level": "SW_SECURE_DECODE"  // Software decode for video
-                                    }
-                                ]
+                                "device_security_level": "SW_SECURE_DECODE",  
+                                "hdcp": "1.4",                              
                             },
                             "playready": {
                                 "min_device_security_level": 150

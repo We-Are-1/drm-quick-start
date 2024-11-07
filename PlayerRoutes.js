@@ -111,6 +111,9 @@
                                     player.addEventListener('error', (event) => {
                                         console.error('Player error:', event.detail);
                                         showError(event.detail.message);
+                                        if (error.code === shaka.util.Error.Code.DRM_SESSION_FAILED) {
+                                            console.error('DRM session failed:', error.data);
+                                        }
                                     });
 
                                     // Basic configuration
@@ -139,10 +142,19 @@
                                             },
                                             advanced: {
                                                 'com.winevine.alpha': {
-                                                'videoRobustness': 'HW_SECURE_DECODE'
+                                                    videoRobustness: 'SW_SECURE_DECODE',
+                                                    audioRobustness: 'SW_SECURE_CRYPTO'
                                                 }
                                             }        
                                         }
+                                        streaming: {
+                                            failureCallback: (error) => {
+                                                console.error('Streaming error:', error);
+                                            },
+                                            rebufferingGoal: 2,
+                                            bufferingGoal: 10,
+                                            bufferBehind: 30
+                                         }    
                                     };
 
                                     console.log('Applying basic configuration...');

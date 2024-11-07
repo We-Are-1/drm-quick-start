@@ -70,7 +70,7 @@
                         {
                             "name": "Policy A",
                             "widevine": {
-                                "device_security_level": "HW_SECURE_DECODE",  // Hardware security that works on more devices
+                                "device_security_level": "HW_SECURE_CRYPTO",  // Hardware security that works on more devices
                                 "hdcp": "2.0",                               // Standard HDCP requirement
                                 "cgms_a": "copy_never"                       // Prevent copying
                             },

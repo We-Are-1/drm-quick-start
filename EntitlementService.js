@@ -65,7 +65,7 @@
                         {
                             "name": "Policy",
                             "widevine": {
-                                "device_security_level": "HW_SECURE_CRYPTO",
+                                "device_security_level": "HW_SECURE_DECODE",
                                 "hdcp": "2.0"
                             },
                             "playready": {

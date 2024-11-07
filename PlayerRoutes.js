@@ -116,7 +116,7 @@
                                             },
                                             advanced: {
                                                 'com.winevine.alpha': {
-                                                    videoRobustness: 'SW_SECURE_DECODE',
+                                                    'videoRobustness': 'SW_SECURE_DECODE',
                                                 }
                                             }        
                                         }

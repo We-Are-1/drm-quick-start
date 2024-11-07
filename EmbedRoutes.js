@@ -138,8 +138,9 @@
                                                 'com.microsoft.playready': 'https://99b94032.drm-playready-licensing.axprod.net/AcquireLicense'
                                             },
                                             advanced: {
-                                            'com.winevine.alpha': {
-                                            'videoRobustness': 'HW_SECURE_DECODE'
+                                                'com.winevine.alpha': {
+                                                    'videoRobustness': 'HW_SECURE_DECODE'
+                                                }
                                             }    
                                         }
                                     };

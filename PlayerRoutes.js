@@ -137,6 +137,11 @@
                                                 'com.widevine.alpha': 'https://99b94032.drm-widevine-licensing.axprod.net/AcquireLicense',
                                                 'com.microsoft.playready': 'https://99b94032.drm-playready-licensing.axprod.net/AcquireLicense'
                                             }
+                                            advanced: {
+                                                'com.winevine.alpha': {
+                                                'videoRobustness': 'HW_SECURE_DECODE'
+                                                }
+                                            }        
                                         }
                                     };
 

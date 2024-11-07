@@ -1,4 +1,4 @@
-// PlayerRoutes.js AND EmbedRoutes.js
+// For both PlayerRoutes.js and EmbedRoutes.js
 (function () {
     "use strict";
 
@@ -32,8 +32,9 @@
                     <!DOCTYPE html>
                     <html>
                     <head>
-                        <!-- Only difference between files is this title -->
                         <title>${video.name}${req.baseUrl.includes('embed') ? '' : ' - Player'}</title>
+                        <meta charset="utf-8">
+                        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
                         <script src="https://cdn.jsdelivr.net/npm/shaka-player@4.3.5/dist/shaka-player.compiled.min.js"></script>
                         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shaka-player@4.3.5/dist/controls.min.css"/>
                         <style>
@@ -67,8 +68,8 @@
                                 console.log('Browser detected:', isSafari ? 'Safari' : 'Other');
 
                                 try {
-                                    // Install polyfills
                                     if (isSafari) {
+                                        console.log('Installing legacy FairPlay support...');
                                         shaka.polyfill.PatchedMediaKeysApple.install(/* enableUninstall= */ true);
                                     }
                                     
@@ -80,7 +81,13 @@
 
                                     const player = new shaka.Player(video);
 
-                                    // Basic player configuration
+                                    // Enhanced error handling
+                                    player.addEventListener('error', (event) => {
+                                        console.error('Player error:', event.detail);
+                                        showError(event.detail.message);
+                                    });
+
+                                    // Basic configuration
                                     const basicConfig = {
                                         streaming: {
                                             bufferingGoal: 10,
@@ -88,18 +95,34 @@
                                             bufferBehind: 30,
                                             ignoreTextStreamFailures: true,
                                             alwaysStreamText: true,
-                                            useNativeHlsOnSafari: true
+                                            useNativeHlsOnSafari: true,
+                                            retryParameters: {
+                                                timeout: 30000,
+                                                maxAttempts: 2,
+                                                baseDelay: 1000,
+                                                backoffFactor: 2,
+                                                fuzzFactor: 0.5
+                                            }
                                         },
                                         drm: {
                                             servers: {
-                                                'com.apple.fps.1_0': 'https://drm-fairplay-licensing.axprod.net/AcquireLicense',
-                                                'com.apple.fps': 'https://drm-fairplay-licensing.axprod.net/AcquireLicense',
-                                                'com.widevine.alpha': 'https://drm-widevine-licensing.axprod.net/AcquireLicense',
-                                                'com.microsoft.playready': 'https://drm-playready-licensing.axprod.net/AcquireLicense'
+                                                'com.apple.fps.1_0': 'https://99b94032.drm-fairplay-licensing.axprod.net/AcquireLicense',
+                                                'com.apple.fps': 'https://99b94032.drm-fairplay-licensing.axprod.net/AcquireLicense',
+                                                'com.widevine.alpha': 'https://99b94032.drm-widevine-licensing.axprod.net/AcquireLicense',
+                                                'com.microsoft.playready': 'https://99b94032.drm-playready-licensing.axprod.net/AcquireLicense'
+                                            },
+                                            advanced: {
+                                                'com.apple.fps.1_0': {
+                                                    serverCertificateUri: 'https://8d86a98a0a9426a560f8d992.blob.core.windows.net/web/fairplay.cer'
+                                                },
+                                                'com.apple.fps': {
+                                                    serverCertificateUri: 'https://8d86a98a0a9426a560f8d992.blob.core.windows.net/web/fairplay.cer'
+                                                }
                                             }
                                         }
                                     };
 
+                                    console.log('Applying basic configuration...');
                                     player.configure(basicConfig);
 
                                     // Get license token
@@ -113,18 +136,20 @@
                                     }
                                     
                                     const token = await tokenResponse.text();
-                                    console.log('Token received');
+                                    console.log('Token received successfully');
 
-                                    // Load FairPlay certificate for Safari
+                                    // Safari/FairPlay specific setup
                                     if (isSafari) {
                                         try {
-                                            console.log('Fetching FairPlay certificate...');
+                                            console.log('Setting up FairPlay...');
+                                            
                                             const certResponse = await fetch('https://8d86a98a0a9426a560f8d992.blob.core.windows.net/web/fairplay.cer');
-                                            if (!certResponse.ok) throw new Error('Failed to fetch certificate');
+                                            if (!certResponse.ok) throw new Error('Failed to fetch FairPlay certificate');
                                             const certBuffer = await certResponse.arrayBuffer();
                                             const cert = new Uint8Array(certBuffer);
                                             
-                                            // Configure FairPlay certificate
+                                            console.log('FairPlay certificate loaded');
+                                            
                                             player.configure({
                                                 drm: {
                                                     advanced: {
@@ -134,61 +159,63 @@
                                                         'com.apple.fps': {
                                                             serverCertificate: cert
                                                         }
+                                                    },
+                                                    initDataTransform: (initData, initDataType, drmInfo) => {
+                                                        if (initDataType === 'skd') {
+                                                            console.log('Transforming FairPlay init data');
+                                                            const contentId = shaka.util.FairPlayUtils.defaultGetContentId(initData);
+                                                            const cert = drmInfo.serverCertificate;
+                                                            return shaka.util.FairPlayUtils.initDataTransform(initData, contentId, cert);
+                                                        }
+                                                        return initData;
                                                     }
                                                 }
                                             });
-                                            console.log('FairPlay certificate configured');
+
+                                            player.getNetworkingEngine().registerRequestFilter((type, request) => {
+                                                if (type === shaka.net.NetworkingEngine.RequestType.LICENSE) {
+                                                    const contentId = shaka.util.FairPlayUtils.defaultGetContentId(request.initData);
+                                                    console.log('Preparing FairPlay license request for content:', contentId);
+                                                    
+                                                    request.headers['X-AxDRM-Message'] = token;
+                                                    request.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+                                                    
+                                                    const originalPayload = new Uint8Array(request.body);
+                                                    const base64Payload = shaka.util.Uint8ArrayUtils.toStandardBase64(originalPayload);
+                                                    const params = 'spc=' + encodeURIComponent(base64Payload);
+                                                    request.body = shaka.util.StringUtils.toUTF8(params);
+                                                    
+                                                    console.log('FairPlay license request prepared:', {
+                                                        contentId: contentId,
+                                                        url: request.uris[0]
+                                                    });
+                                                }
+                                            });
+
+                                            player.getNetworkingEngine().registerResponseFilter((type, response) => {
+                                                if (type === shaka.net.NetworkingEngine.RequestType.LICENSE) {
+                                                    console.log('Processing FairPlay license response');
+                                                    let responseText = shaka.util.StringUtils.fromUTF8(response.data);
+                                                    responseText = responseText.trim();
+                                                    
+                                                    if (responseText.substr(0, 5) === '<ckc>' && responseText.substr(-6) === '</ckc>') {
+                                                        responseText = responseText.slice(5, -6);
+                                                    }
+                                                    
+                                                    response.data = shaka.util.Uint8ArrayUtils.fromBase64(responseText).buffer;
+                                                    console.log('FairPlay license response processed');
+                                                }
+                                            });
+
                                         } catch (error) {
-                                            console.error('Error loading FairPlay certificate:', error);
+                                            console.error('FairPlay setup error:', error);
                                             throw error;
                                         }
-                                    }
-
-                                    // Configure DRM
-                                    player.configure({
-                                        drm: {
-                                            initDataTransform: (initData, initDataType, drmInfo) => {
-                                                if (isSafari && initDataType === 'skd') {
-                                                    console.log('Transforming FairPlay init data');
-                                                    const contentId = shaka.util.FairPlayUtils.defaultGetContentId(initData);
-                                                    const cert = drmInfo.serverCertificate;
-                                                    return shaka.util.FairPlayUtils.initDataTransform(initData, contentId, cert);
-                                                }
-                                                return initData;
-                                            }
-                                        }
-                                    });
-
-                                    // Configure license requests
-                                    player.getNetworkingEngine().registerRequestFilter((type, request) => {
-                                        if (type === shaka.net.NetworkingEngine.RequestType.LICENSE) {
-                                            request.headers['X-AxDRM-Message'] = token;
-                                            
-                                            if (isSafari) {
-                                                console.log('Preparing FairPlay license request');
-                                                const originalPayload = new Uint8Array(request.body);
-                                                const base64Payload = shaka.util.Uint8ArrayUtils.toStandardBase64(originalPayload);
-                                                const params = 'spc=' + encodeURIComponent(base64Payload);
-                                                
-                                                request.headers['Content-Type'] = 'application/x-www-form-urlencoded';
-                                                request.body = shaka.util.StringUtils.toUTF8(params);
-                                            }
-                                        }
-                                    });
-
-                                    // Configure license responses for FairPlay
-                                    if (isSafari) {
-                                        player.getNetworkingEngine().registerResponseFilter((type, response) => {
+                                    } else {
+                                        // Non-Safari DRM setup
+                                        player.getNetworkingEngine().registerRequestFilter((type, request) => {
                                             if (type === shaka.net.NetworkingEngine.RequestType.LICENSE) {
-                                                console.log('Processing FairPlay license response');
-                                                let responseText = shaka.util.StringUtils.fromUTF8(response.data);
-                                                responseText = responseText.trim();
-                                                
-                                                if (responseText.substr(0, 5) === '<ckc>' && responseText.substr(-6) === '</ckc>') {
-                                                    responseText = responseText.slice(5, -6);
-                                                }
-                                                
-                                                response.data = shaka.util.Uint8ArrayUtils.fromBase64(responseText).buffer;
+                                                request.headers['X-AxDRM-Message'] = token;
                                             }
                                         });
                                     }
@@ -196,6 +223,18 @@
                                     // Load content
                                     const manifestUrl = isSafari ? '${video.hlsUrl}' : '${video.url}';
                                     console.log('Loading manifest:', manifestUrl);
+                                    
+                                    // Safari-specific configurations
+                                    if (isSafari) {
+                                        player.configure({
+                                            streaming: {
+                                                useNativeHlsOnSafari: true
+                                            },
+                                            preferredAudioCodecs: ['mp4a.40.2'],
+                                            preferredTextLanguage: 'en'
+                                        });
+                                    }
+
                                     await player.load(manifestUrl);
                                     console.log('Content loaded successfully');
 
@@ -209,6 +248,7 @@
                                                         console.log('Playback requires user interaction first');
                                                     } else {
                                                         console.error('Play error:', error);
+                                                        showError('Playback failed. Please try again.');
                                                     }
                                                 });
                                             }

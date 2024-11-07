@@ -68,10 +68,48 @@
                     "content_key_usage_policies": [
                         {
                             "name": "Policy A",
+                            "widevine": {
+                                "device_security_level": "HW_SECURE_ALL",  // Highest security - Level 1
+                                "hdcp": "2.2",                            // Highest HDCP version
+                                "cgms_a": "copy_never",                   // Prevent copying
+                                "require_hdcp_match": true,               // Strict HDCP enforcement
+                                "disable_analog_output": true,            // Prevent analog output
+                                "require_hdcp_screen_encryption": true    // Force HDCP encryption
+                            },
                             "playready": {
-                                "min_device_security_level": 150,
+                                "min_device_security_level": 3000,        // Hardware-based security
+                                // Digital video protection
+                                "compressed_digital_video_opl": 400,      // Maximum protection
+                                "uncompressed_digital_video_opl": 400,    // Maximum protection
+                                "require_hdcp": true,                     // Require HDCP
+                                // Audio protection
+                                "compressed_digital_audio_opl": 300,
+                                "uncompressed_digital_audio_opl": 300,
+                                // Analog protection
+                                "analog_video_opl": 200,
+                                // Required for hardware DRM
                                 "play_enablers": [
-                                    "786627D8-C2A6-44BE-8F88-08AE255B01A7"
+                                    "786627D8-C2A6-44BE-8F88-08AE255B01A7"  // Hardware DRM
+                                ],
+                                // HDCP configuration
+                                "digital_video_output_protections": [
+                                    {
+                                        "id": "6f727eaa-831e-4f99-9c83-292a5f305e21",  // HDCP 2.2
+                                        "config_data": "b3J+qoMeT5mcgykqXzBeIQ=="
+                                    }
+                                ],
+                                // Additional protections
+                                "compressed_digital_video_output_protections": [
+                                    {
+                                        "id": "6f727eaa-831e-4f99-9c83-292a5f305e21",
+                                        "config_data": "b3J+qoMeT5mcgykqXzBeIQ=="
+                                    }
+                                ],
+                                "uncompressed_digital_video_output_protections": [
+                                    {
+                                        "id": "6f727eaa-831e-4f99-9c83-292a5f305e21",
+                                        "config_data": "b3J+qoMeT5mcgykqXzBeIQ=="
+                                    }
                                 ]
                             }
                         }
@@ -102,7 +140,7 @@
                     "noTimestamp": true
                 });
 
-                response.send(licenseToken);  // Changed from response.json() to response.send()
+                response.send(licenseToken);
             });
 
             return router;

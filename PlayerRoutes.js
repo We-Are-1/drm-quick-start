@@ -69,7 +69,7 @@
 
                                 try {
                                     if (isSafari) {
-                                        console.log('Installing legacy FairPlay support...');
+                                        console.log('Installing FairPlay support...');
                                         shaka.polyfill.PatchedMediaKeysApple.install(/* enableUninstall= */ true);
                                     }
                                     
@@ -110,14 +110,6 @@
                                                 'com.apple.fps': 'https://99b94032.drm-fairplay-licensing.axprod.net/AcquireLicense',
                                                 'com.widevine.alpha': 'https://99b94032.drm-widevine-licensing.axprod.net/AcquireLicense',
                                                 'com.microsoft.playready': 'https://99b94032.drm-playready-licensing.axprod.net/AcquireLicense'
-                                            },
-                                            advanced: {
-                                                'com.apple.fps.1_0': {
-                                                    serverCertificateUri: 'https://8d86a98a0a9426a560f8d992.blob.core.windows.net/web/fairplay.cer'
-                                                },
-                                                'com.apple.fps': {
-                                                    serverCertificateUri: 'https://8d86a98a0a9426a560f8d992.blob.core.windows.net/web/fairplay.cer'
-                                                }
                                             }
                                         }
                                     };
@@ -159,51 +151,32 @@
                                                         'com.apple.fps': {
                                                             serverCertificate: cert
                                                         }
-                                                    },
-                                                    initDataTransform: (initData, initDataType, drmInfo) => {
-                                                        if (initDataType === 'skd') {
-                                                            console.log('Transforming FairPlay init data');
-                                                            const contentId = shaka.util.FairPlayUtils.defaultGetContentId(initData);
-                                                            const cert = drmInfo.serverCertificate;
-                                                            return shaka.util.FairPlayUtils.initDataTransform(initData, contentId, cert);
-                                                        }
-                                                        return initData;
                                                     }
                                                 }
                                             });
 
+                                            // Configure license request handling for FairPlay
                                             player.getNetworkingEngine().registerRequestFilter((type, request) => {
                                                 if (type === shaka.net.NetworkingEngine.RequestType.LICENSE) {
-                                                    const contentId = shaka.util.FairPlayUtils.defaultGetContentId(request.initData);
-                                                    console.log('Preparing FairPlay license request for content:', contentId);
-                                                    
+                                                    // Set correct headers for FairPlay
                                                     request.headers['X-AxDRM-Message'] = token;
-                                                    request.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+                                                    request.headers['Content-Type'] = 'application/octet-stream';
                                                     
-                                                    const originalPayload = new Uint8Array(request.body);
-                                                    const base64Payload = shaka.util.Uint8ArrayUtils.toStandardBase64(originalPayload);
-                                                    const params = 'spc=' + encodeURIComponent(base64Payload);
-                                                    request.body = shaka.util.StringUtils.toUTF8(params);
-                                                    
-                                                    console.log('FairPlay license request prepared:', {
-                                                        contentId: contentId,
-                                                        url: request.uris[0]
-                                                    });
+                                                    // Do not modify the request body - keep it as binary
+                                                    console.log('FairPlay license request prepared');
                                                 }
                                             });
 
+                                            // Configure license response handling for FairPlay
                                             player.getNetworkingEngine().registerResponseFilter((type, response) => {
                                                 if (type === shaka.net.NetworkingEngine.RequestType.LICENSE) {
-                                                    console.log('Processing FairPlay license response');
-                                                    let responseText = shaka.util.StringUtils.fromUTF8(response.data);
-                                                    responseText = responseText.trim();
-                                                    
-                                                    if (responseText.substr(0, 5) === '<ckc>' && responseText.substr(-6) === '</ckc>') {
-                                                        responseText = responseText.slice(5, -6);
+                                                    // Only process if we receive a CKC response
+                                                    const responseText = shaka.util.StringUtils.fromUTF8(response.data);
+                                                    if (responseText.includes('<ckc>')) {
+                                                        console.log('Processing CKC response');
+                                                        const trimmed = responseText.replace(/<ckc>|<\\/ckc>/g, '').trim();
+                                                        response.data = shaka.util.Uint8ArrayUtils.fromBase64(trimmed).buffer;
                                                     }
-                                                    
-                                                    response.data = shaka.util.Uint8ArrayUtils.fromBase64(responseText).buffer;
-                                                    console.log('FairPlay license response processed');
                                                 }
                                             });
 
@@ -226,13 +199,7 @@
                                     
                                     // Safari-specific configurations
                                     if (isSafari) {
-                                        player.configure({
-                                            streaming: {
-                                                useNativeHlsOnSafari: true
-                                            },
-                                            preferredAudioCodecs: ['mp4a.40.2'],
-                                            preferredTextLanguage: 'en'
-                                        });
+                                        player.configure('streaming.useNativeHlsOnSafari', true);
                                     }
 
                                     await player.load(manifestUrl);

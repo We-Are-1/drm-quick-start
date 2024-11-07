@@ -1,4 +1,6 @@
-// PlayerRoutes.js
+// PlayerRoutes.js & EmbedRoutes.js
+// The core player logic should be the same in both files, just with different styling
+
 (function () {
     "use strict";
 
@@ -18,7 +20,6 @@
                     return res.status(404).send("Video not found");
                 }
 
-                // Add CSP headers for security
                 res.header("Content-Security-Policy", 
                     "default-src 'self'; " +
                     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; " +
@@ -33,213 +34,166 @@
                     <!DOCTYPE html>
                     <html>
                     <head>
-                        <title>${video.name} - DRM Player</title>
+                        <title>${video.name}</title>
                         <script src="https://cdn.jsdelivr.net/npm/shaka-player@4.3.5/dist/shaka-player.compiled.min.js"></script>
                         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shaka-player@4.3.5/dist/controls.min.css"/>
                         <style>
-                            body { margin: 0; padding: 0; background: #000; }
-                            #video { width: 100%; height: 100vh; }
-                            .error-message { 
+                            body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+                            #video { width: 100vw; height: 100vh; }
+                            #error-display {
                                 position: fixed;
                                 top: 50%;
                                 left: 50%;
                                 transform: translate(-50%, -50%);
-                                color: white; 
-                                padding: 20px; 
-                                text-align: center; 
-                                font-family: Arial, sans-serif;
                                 background: rgba(0,0,0,0.8);
+                                color: white;
+                                padding: 20px;
                                 border-radius: 5px;
+                                display: none;
                                 z-index: 1000;
+                                font-family: Arial, sans-serif;
                             }
                         </style>
                     </head>
                     <body>
                         <video id="video" controls playsinline autoplay="false"></video>
+                        <div id="error-display"></div>
                         <script>
                             async function init() {
                                 const video = document.getElementById('video');
-                                video.autoplay = false;  // Explicitly prevent autoplay
+                                video.autoplay = false;
+                                const errorDisplay = document.getElementById('error-display');
                                 
-                                // Check if Safari
                                 const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
                                 console.log('Browser detected:', isSafari ? 'Safari' : 'Other');
 
                                 try {
-                                    // Install polyfills first
+                                    // Install legacy FairPlay support for Safari
+                                    if (isSafari) {
+                                        shaka.polyfill.PatchedMediaKeysApple.install(/* enableUninstall= */ true);
+                                    }
+                                    
+                                    // Install all other polyfills
                                     await shaka.polyfill.installAll();
 
-                                    // Check browser support after polyfills
                                     if (!shaka.Player.isBrowserSupported()) {
                                         throw new Error('Browser not supported for DRM playback');
                                     }
 
                                     const player = new shaka.Player(video);
 
-                                    // Player configuration for proper playback behavior
+                                    // Player configuration
                                     const playerConfig = {
                                         streaming: {
-                                            autoplay: false,
-                                            useNativeHlsOnSafari: true,
-                                            alwaysStreamText: true,
-                                            rebufferingGoal: 2,
                                             bufferingGoal: 10,
+                                            rebufferingGoal: 2,
                                             bufferBehind: 30,
-                                            smallGapLimit: 1.5,
-                                            jumpLargeGaps: true
+                                            ignoreTextStreamFailures: true,
+                                            alwaysStreamText: true,
+                                            useNativeHlsOnSafari: true
                                         },
-                                        manifest: {
-                                            dash: {
-                                                ignoreMinBufferTime: true,
-                                                autoCorrectDrift: true
-                                            },
-                                            hls: {
-                                                ignoreMinBufferTime: true
+                                        drm: {
+                                            servers: {
+                                                'com.apple.fps.1_0': 'https://drm-fairplay-licensing.axprod.net/AcquireLicense',
+                                                'com.apple.fps': 'https://drm-fairplay-licensing.axprod.net/AcquireLicense',
+                                                'com.widevine.alpha': 'https://drm-widevine-licensing.axprod.net/AcquireLicense',
+                                                'com.microsoft.playready': 'https://drm-playready-licensing.axprod.net/AcquireLicense'
                                             }
                                         }
                                     };
 
-                                    // Configure player with streaming settings
                                     player.configure(playerConfig);
 
-                                    // Enable more detailed error logging
-                                    player.addEventListener('error', (event) => {
-                                        if (isSafari) {
-                                            console.log('Safari DRM Status:', {
-                                                'EME Support': !!window.MediaKeys,
-                                                'FairPlay Support': navigator.requestMediaKeySystemAccess ? true : false,
-                                                'Error Code': event.detail.code,
-                                                'Error Category': event.detail.category,
-                                                'Error Message': event.detail.message
-                                            });
-                                        }
-                                        
-                                        if (isSafari && event.detail.code === 6010) {
-                                            showError('Please ensure FairPlay DRM is enabled in your Safari settings');
-                                        } else {
-                                            console.warn('Player error:', event.detail.message);
-                                            console.warn('Error details:', event.detail);
-                                            showError(event.detail.message);
-                                        }
+                                    // Get license token
+                                    const tokenResponse = await fetch('/api/authorization/${encodeURIComponent(video.name)}', {
+                                        credentials: 'include'
                                     });
+                                    
+                                    if (!tokenResponse.ok) {
+                                        throw new Error('Failed to get license token');
+                                    }
+                                    
+                                    const token = await tokenResponse.text();
 
-                                    // First fetch the FairPlay certificate if using Safari
-                                    let fairplayCertificate;
+                                    // Load FairPlay certificate for Safari
                                     if (isSafari) {
                                         try {
-                                            console.log('Fetching FairPlay certificate...');
                                             const certResponse = await fetch('https://8d86a98a0a9426a560f8d992.blob.core.windows.net/web/fairplay.cer');
                                             if (!certResponse.ok) throw new Error('Failed to fetch certificate');
-                                            fairplayCertificate = new Uint8Array(await certResponse.arrayBuffer());
-                                            console.log('FairPlay certificate loaded successfully', fairplayCertificate);
+                                            const certBuffer = await certResponse.arrayBuffer();
+                                            const cert = new Uint8Array(certBuffer);
+                                            
+                                            player.configure('drm.advanced.\'com.apple.fps.1_0\'.serverCertificate', cert);
+                                            player.configure('drm.advanced.\'com.apple.fps\'.serverCertificate', cert);
                                         } catch (error) {
                                             console.error('Error loading FairPlay certificate:', error);
                                             throw error;
                                         }
                                     }
 
-                                    // Configure DRM with updated FairPlay settings
-                                    const drmConfig = {
-                                        drm: {
-                                            servers: {
-                                                'com.widevine.alpha': 'https://99b94032.drm-widevine-licensing.axprod.net/AcquireLicense',
-                                                'com.microsoft.playready': 'https://99b94032.drm-playready-licensing.axprod.net/AcquireLicense',
-                                                'com.apple.fps.1_0': 'https://99b94032.drm-fairplay-licensing.axprod.net/AcquireLicense'
-                                            },
-                                            advanced: {
-                                                'com.apple.fps.1_0': {
-                                                    serverCertificate: fairplayCertificate,
-                                                    persistentStateRequired: true,
-                                                    distinctiveIdentifierRequired: false
-                                                }
-                                            },
-                                            initDataTransform: (initData, initDataType, drmInfo) => {
-                                                if (isSafari && initDataType === 'skd') {
-                                                    console.log('Transforming FairPlay init data');
-                                                    const contentId = shaka.util.FairPlayUtils.contentIdFromInitData(initData);
-                                                    const cert = drmInfo.serverCertificate;
-                                                    return shaka.util.FairPlayUtils.initDataTransform(initData, contentId, cert);
-                                                }
-                                                return initData;
-                                            }
+                                    // Configure DRM init data transform for FairPlay
+                                    player.configure('drm.initDataTransform', (initData, initDataType, drmInfo) => {
+                                        if (isSafari && initDataType === 'skd') {
+                                            const contentId = shaka.util.FairPlayUtils.defaultGetContentId(initData);
+                                            const cert = drmInfo.serverCertificate;
+                                            return shaka.util.FairPlayUtils.initDataTransform(initData, contentId, cert);
                                         }
-                                    };
-
-                                    // Configure player with DRM settings
-                                    player.configure(drmConfig);
-
-                                    // Get license token
-                                    console.log('Fetching license token...');
-                                    const tokenResponse = await fetch('/api/authorization/${encodeURIComponent(video.name)}', {
-                                        credentials: 'include'
+                                        return initData;
                                     });
-                                    
-                                    if (!tokenResponse.ok) {
-                                        throw new Error('Failed to get license token: ' + tokenResponse.status);
-                                    }
-                                    
-                                    const token = await tokenResponse.text();
-                                    console.log('Token received successfully');
 
-                                    // Register request and response filters for license requests
+                                    // Configure license request handling
                                     player.getNetworkingEngine().registerRequestFilter((type, request) => {
                                         if (type === shaka.net.NetworkingEngine.RequestType.LICENSE) {
                                             request.headers['X-AxDRM-Message'] = token;
                                             
                                             if (isSafari) {
+                                                // Format the license request for FairPlay
+                                                const originalPayload = new Uint8Array(request.body);
+                                                const base64Payload = shaka.util.Uint8ArrayUtils.toStandardBase64(originalPayload);
+                                                const params = 'spc=' + encodeURIComponent(base64Payload);
+                                                
                                                 request.headers['Content-Type'] = 'application/x-www-form-urlencoded';
-                                                console.log('Added FairPlay headers to license request');
+                                                request.body = shaka.util.StringUtils.toUTF8(params);
+                                                
+                                                console.log('FairPlay license request prepared');
                                             }
-                                            
-                                            console.log('License request headers:', request.headers);
                                         }
                                     });
 
-                                    // Add response filter specifically for Safari
+                                    // Configure license response handling for FairPlay
                                     if (isSafari) {
                                         player.getNetworkingEngine().registerResponseFilter((type, response) => {
                                             if (type === shaka.net.NetworkingEngine.RequestType.LICENSE) {
-                                                console.log('Processing FairPlay license response');
-                                                if (response.data) {
-                                                    console.log('License response received');
+                                                let responseText = shaka.util.StringUtils.fromUTF8(response.data);
+                                                responseText = responseText.trim();
+                                                
+                                                // Handle CKC wrapper if present
+                                                if (responseText.substr(0, 5) === '<ckc>' && responseText.substr(-6) === '</ckc>') {
+                                                    responseText = responseText.slice(5, -6);
                                                 }
+                                                
+                                                response.data = shaka.util.Uint8ArrayUtils.fromBase64(responseText).buffer;
+                                                console.log('FairPlay license response processed');
                                             }
                                         });
                                     }
 
-                                    // Use appropriate manifest URL based on browser
+                                    // Load content
                                     const manifestUrl = isSafari ? '${video.hlsUrl}' : '${video.url}';
-                                    console.log('Loading manifest for ' + (isSafari ? 'Safari/HLS' : 'Other/DASH') + ':', manifestUrl);
-                                    
-                                    try {
-                                        await player.load(manifestUrl);
-                                        console.log('Manifest loaded successfully');
+                                    console.log('Loading manifest:', manifestUrl);
+                                    await player.load(manifestUrl);
+                                    console.log('Content loaded successfully');
 
-                                        // Handle autoplay for Safari
-                                        if (isSafari) {
-                                            video.addEventListener('play', () => {
-                                                const playPromise = video.play();
-                                                if (playPromise !== undefined) {
-                                                    playPromise.then(() => {
-                                                        console.log('Playback started by user interaction');
-                                                    }).catch(error => {
-                                                        console.log('Auto-play prevented, waiting for user interaction:', error);
-                                                        // Expected behavior, no need to show error
-                                                    });
-                                                }
-                                            });
-                                        }
-                                    } catch (loadError) {
-                                        console.error('Manifest load error:', loadError);
-                                        if (isSafari) {
-                                            console.error('Safari specific error details:', {
-                                                'URL Type': 'HLS',
-                                                'Manifest URL': manifestUrl,
-                                                'Error Type': loadError.name,
-                                                'Error Message': loadError.message
-                                            });
-                                        }
-                                        throw loadError;
+                                    // Handle play event specially for Safari
+                                    if (isSafari) {
+                                        video.addEventListener('play', () => {
+                                            const playPromise = video.play();
+                                            if (playPromise !== undefined) {
+                                                playPromise.catch(error => {
+                                                    console.log('Playback prevented until user interaction:', error);
+                                                });
+                                            }
+                                        });
                                     }
 
                                 } catch (error) {
@@ -249,18 +203,15 @@
                             }
 
                             function showError(message) {
-                                const errorDiv = document.createElement('div');
-                                errorDiv.className = 'error-message';
-                                
+                                const errorDisplay = document.getElementById('error-display');
                                 let userMessage = message;
                                 if (message.includes('undefined')) {
                                     userMessage = 'Unable to initialize video playback. Please try refreshing the page.';
                                 } else if (message.includes('FairPlay')) {
                                     userMessage = 'Please ensure FairPlay DRM is enabled in your Safari settings.';
                                 }
-                                
-                                errorDiv.textContent = userMessage;
-                                document.body.appendChild(errorDiv);
+                                errorDisplay.textContent = userMessage;
+                                errorDisplay.style.display = 'block';
                                 console.warn('Player Error:', message);
                             }
 
@@ -275,10 +226,3 @@
         }
     };
 })();
-
-// EmbedRoutes.js 
-// (Same content as PlayerRoutes.js but with these changes in the HTML template:)
-// - Different styling (body margin/padding/background)
-// - Different video element styling (width/height)
-// - Different error message styling
-// The JavaScript code remains exactly the same

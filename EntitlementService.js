@@ -63,24 +63,31 @@
                     },
                     "content_key_usage_policies": [
                         {
-                            "name": "Policy",
+                            "name": "DefaultPolicy",
                             "widevine": {
-                                "device_security_level": "HW_SECURE_DECODE",
-                                "hdcp": "2.0"
+                                "device_security_level": "SW_SECURE_CRYPTO",  // Allow software-level security
+                                "hdcp": "NONE",                              // Remove HDCP requirement
+                                "video_resolution_constraints": [
+                                    {
+                                        "min_resolution": "SD",
+                                        "max_resolution": "UHD2",
+                                        "security_level": "SW_SECURE_DECODE"  // Software decode for video
+                                    }
+                                ]
                             },
                             "playready": {
-                                "min_device_security_level": 2000
+                                "min_device_security_level": 150
                             }
                         }
                     ]
                 };
-
+                
+                // Simplified key handling
                 video.keys.forEach(function (key) {
                     let inlineKey = {
                         "id": key.keyId,
-                        "usage_policy": "Policy"        
+                        "usage_policy": "DefaultPolicy"    
                     } 
-
                     message.content_keys_source.inline.push(inlineKey);
                 });
 

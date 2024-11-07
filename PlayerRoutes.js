@@ -53,32 +53,6 @@
                                 z-index: 1000;
                                 font-family: Arial, sans-serif;
                             }
-                            /* Custom player UI styles */
-                            .shaka-play-button[icon="play"] {
-                                background-color: #FFAF48 !important;
-                                border-radius: 50%;
-                            }
-                            .shaka-volume-bar-container {
-                                accent-color: #FFAF48 !important;
-                            }
-                            .shaka-controls button:hover {
-                                background-color: #FFAF48 !important;
-                            }
-                            /* Hide unnecessary controls */
-                            .shaka-playback-rates,
-                            .shaka-captions-button {
-                                display: none !important;
-                            }
-                            /* Style quality selection */
-                            .shaka-resolutions {
-                                display: block !important;
-                            }
-                            .shaka-resolutions button {
-                                color: white;
-                            }
-                            .shaka-current-selection-span {
-                                color: #FFAF48;
-                            }
                         </style>
                     </head>
                     <body>

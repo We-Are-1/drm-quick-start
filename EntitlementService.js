@@ -69,7 +69,7 @@
                                 "hdcp": "1.4",                              
                             },
                             "playready": {
-                                "min_device_security_level": 150
+                                "min_device_security_level": 2000
                             }
                         }
                     ]

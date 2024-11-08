@@ -7,61 +7,101 @@
             "name": "1. giam stress CEO",
             "url": "https://8d86a98a0a9426a560f8d992.blob.core.windows.net/video-output/XGkXGz5YuAaQTqURjwdRKD/cmaf/manifest.mpd",
             "hlsUrl": "https://8d86a98a0a9426a560f8d992.blob.core.windows.net/video-output/XGkXGz5YuAaQTqURjwdRKD/cmaf/manifest.m3u8",
-            "keys": [{"keyId": "d7a83c00-6d4b-4054-9223-6e49ae4f63d7"}]
+            "keys": [
+                {
+                    "keyId": "d7a83c00-6d4b-4054-9223-6e49ae4f63d7"
+                }
+            ]
         },
         {
             "name": "2. benh tat khong gian khac",
             "url": "https://8d86a98a0a9426a560f8d992.blob.core.windows.net/video-output/QYT7UR49LRjhLgY6zDorPL/cmaf/manifest.mpd",
             "hlsUrl": "https://8d86a98a0a9426a560f8d992.blob.core.windows.net/video-output/QYT7UR49LRjhLgY6zDorPL/cmaf/manifest.m3u8",
-            "keys": [{"keyId": "30a83508-7548-44fd-91ae-2c84919b8cd6"}]
+            "keys": [
+                {
+                    "keyId": "30a83508-7548-44fd-91ae-2c84919b8cd6"
+                }
+            ]
         },
         {
             "name": "3. ma tuy",
             "url": "https://8d86a98a0a9426a560f8d992.blob.core.windows.net/video-output/RDs8ZtRkyhPQnz9HM7c9ZG/cmaf/manifest.mpd",
             "hlsUrl": "https://8d86a98a0a9426a560f8d992.blob.core.windows.net/video-output/RDs8ZtRkyhPQnz9HM7c9ZG/cmaf/manifest.m3u8",
-            "keys": [{"keyId": "9b9745b1-7f8f-4392-8783-93dcabe8b358"}]
+            "keys": [
+                {
+                    "keyId": "9b9745b1-7f8f-4392-8783-93dcabe8b358"
+                }
+            ]
         },
         {
             "name": "4. chu tinh vuong",
             "url": "https://8d86a98a0a9426a560f8d992.blob.core.windows.net/video-output/AFCK1r5Pu5xW3tp7t2iyNF/cmaf/manifest.mpd",
             "hlsUrl": "https://8d86a98a0a9426a560f8d992.blob.core.windows.net/video-output/AFCK1r5Pu5xW3tp7t2iyNF/cmaf/manifest.m3u8",
-            "keys": [{"keyId": "eb365c71-24ef-4fb3-a978-51a6ae4542d4"}]
+            "keys": [
+                {
+                    "keyId": "eb365c71-24ef-4fb3-a978-51a6ae4542d4"
+                }
+            ]
         },
         {
             "name": "5. dai bang khong co don",
             "url": "https://8d86a98a0a9426a560f8d992.blob.core.windows.net/video-output/2EnoE22YtZJh597gGrGaJJ/cmaf/manifest.mpd",
             "hlsUrl": "https://8d86a98a0a9426a560f8d992.blob.core.windows.net/video-output/2EnoE22YtZJh597gGrGaJJ/cmaf/manifest.m3u8",
-            "keys": [{"keyId": "432617f8-388e-4b3c-9a21-629d14ae1737"}]
+            "keys": [
+                {
+                    "keyId": "432617f8-388e-4b3c-9a21-629d14ae1737"
+                }
+            ]
         },
         {
             "name": "6. hurry up tell the world",
             "url": "https://8d86a98a0a9426a560f8d992.blob.core.windows.net/video-output/6y5UxUssRM1R8PFHUrBKG6/cmaf/manifest.mpd",
             "hlsUrl": "https://8d86a98a0a9426a560f8d992.blob.core.windows.net/video-output/6y5UxUssRM1R8PFHUrBKG6/cmaf/manifest.m3u8",
-            "keys": [{"keyId": "36739f55-2715-4829-906b-1a3167a884ba"}]
+            "keys": [
+                {
+                    "keyId": "36739f55-2715-4829-906b-1a3167a884ba"
+                }
+            ]
         },
         {
             "name": "7. trong phap",
             "url": "https://8d86a98a0a9426a560f8d992.blob.core.windows.net/video-output/5Qzcz4ZL1S8DrEgk7A57e9/cmaf/manifest.mpd",
             "hlsUrl": "https://8d86a98a0a9426a560f8d992.blob.core.windows.net/video-output/5Qzcz4ZL1S8DrEgk7A57e9/cmaf/manifest.m3u8",
-            "keys": [{"keyId": "4b9074d7-0c66-438a-81b6-a67ef58725ff"}]
+            "keys": [
+                {
+                    "keyId": "4b9074d7-0c66-438a-81b6-a67ef58725ff"
+                }
+            ]
         },
         {
             "name": "8. SU THAT KHO TIN",
             "url": "https://8d86a98a0a9426a560f8d992.blob.core.windows.net/video-output/ABgu2o7Y9uxnJRTc2vzpSv/cmaf/manifest.mpd",
             "hlsUrl": "https://8d86a98a0a9426a560f8d992.blob.core.windows.net/video-output/ABgu2o7Y9uxnJRTc2vzpSv/cmaf/manifest.m3u8",
-            "keys": [{"keyId": "09f65904-8ee4-44e4-bc55-4948379cf350"}]
+            "keys": [
+                {
+                    "keyId": "09f65904-8ee4-44e4-bc55-4948379cf350"
+                }
+            ]
         },
         {
             "name": "9. tim phut binh an",
             "url": "https://8d86a98a0a9426a560f8d992.blob.core.windows.net/video-output/22KRiEMcH5rnHxSEsbxtYT/cmaf/manifest.mpd",
             "hlsUrl": "https://8d86a98a0a9426a560f8d992.blob.core.windows.net/video-output/22KRiEMcH5rnHxSEsbxtYT/cmaf/manifest.m3u8",
-            "keys": [{"keyId": "2febbd7c-c62e-41bc-b481-f26ab7dc7c1e"}]
+            "keys": [
+                {
+                    "keyId": "2febbd7c-c62e-41bc-b481-f26ab7dc7c1e"
+                }
+            ]
         },
         {
             "name": "10. mua hoa tet",
             "url": "https://8d86a98a0a9426a560f8d992.blob.core.windows.net/video-output/XXYxe25NtYHyQacezaSwt5/cmaf/manifest.mpd",
             "hlsUrl": "https://8d86a98a0a9426a560f8d992.blob.core.windows.net/video-output/XXYxe25NtYHyQacezaSwt5/cmaf/manifest.m3u8",
-            "keys": [{"keyId": "9836ec13-7277-4248-bed8-10bda99c92d1"}]
+            "keys": [
+                {
+                    "keyId": "9836ec13-7277-4248-bed8-10bda99c92d1"
+                }
+            ]
         },
         {
             "name": "11. On dich tro lai",

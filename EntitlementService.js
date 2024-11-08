@@ -56,31 +56,34 @@
                     "type": "entitlement_message",
                     "version": 2,
                     "license": {
-                        "duration": 3600
+                        "start_datetime": validFrom.toISOString(),
+                        "expiration_datetime": validTo.toISOString(),
+                        "allow_persistence": true
                     },
+
                     "content_keys_source": {
                         "inline": []
                     },
+                    
                     "content_key_usage_policies": [
                         {
-                            "name": "DefaultPolicy",
-                            "widevine": {
-                                "device_security_level": "SW_SECURE_DECODE",  
-                                "hdcp": "1.4",                              
-                            },
+                            "name": "Policy A",
                             "playready": {
-                                "min_device_security_level": 2000
+                                "min_device_security_level": 150,
+                                "play_enablers": [
+                                    "786627D8-C2A6-44BE-8F88-08AE255B01A7"
+                                ]
                             }
                         }
                     ]
                 };
-                
-                // Simplified key handling
+
                 video.keys.forEach(function (key) {
                     let inlineKey = {
                         "id": key.keyId,
-                        "usage_policy": "DefaultPolicy"    
+                        "usage_policy": "Policy A"        
                     } 
+
                     message.content_keys_source.inline.push(inlineKey);
                 });
 
@@ -99,7 +102,7 @@
                     "noTimestamp": true
                 });
 
-                response.send(licenseToken);
+                response.send(licenseToken);  // Changed from response.json() to response.send()
             });
 
             return router;

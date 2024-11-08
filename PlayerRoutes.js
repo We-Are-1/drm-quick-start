@@ -53,6 +53,32 @@
                                 z-index: 1000;
                                 font-family: Arial, sans-serif;
                             }
+                            /* Custom player UI styles */
+                            .shaka-play-button[icon="play"] {
+                                background-color: #FFAF48 !important;
+                                border-radius: 50%;
+                            }
+                            .shaka-volume-bar-container {
+                                accent-color: #FFAF48 !important;
+                            }
+                            .shaka-controls button:hover {
+                                background-color: #FFAF48 !important;
+                            }
+                            /* Hide unnecessary controls */
+                            .shaka-playback-rates,
+                            .shaka-captions-button {
+                                display: none !important;
+                            }
+                            /* Style quality selection */
+                            .shaka-resolutions {
+                                display: block !important;
+                            }
+                            .shaka-resolutions button {
+                                color: white;
+                            }
+                            .shaka-current-selection-span {
+                                color: #FFAF48;
+                            }
                         </style>
                     </head>
                     <body>
@@ -85,9 +111,6 @@
                                     player.addEventListener('error', (event) => {
                                         console.error('Player error:', event.detail);
                                         showError(event.detail.message);
-                                        if (error.code === shaka.util.Error.Code.DRM_SESSION_FAILED) {
-                                            console.error('DRM session failed:', error.data);
-                                        }
                                     });
 
                                     // Basic configuration
@@ -113,21 +136,8 @@
                                                 'com.apple.fps': 'https://99b94032.drm-fairplay-licensing.axprod.net/AcquireLicense',
                                                 'com.widevine.alpha': 'https://99b94032.drm-widevine-licensing.axprod.net/AcquireLicense',
                                                 'com.microsoft.playready': 'https://99b94032.drm-playready-licensing.axprod.net/AcquireLicense'
-                                            },
-                                            advanced: {
-                                                'com.winevine.alpha': {
-                                                    'videoRobustness': 'SW_SECURE_DECODE',
-                                                }
-                                            }        
+                                            }
                                         }
-                                        streaming: {
-                                            failureCallback: (error) => {
-                                                console.error('Streaming error:', error);
-                                            },
-                                            rebufferingGoal: 2,
-                                            bufferingGoal: 10,
-                                            bufferBehind: 30
-                                         }    
                                     };
 
                                     console.log('Applying basic configuration...');

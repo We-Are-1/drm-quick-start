@@ -69,7 +69,7 @@
                         {
                             "name": "Policy A",
                             "widevine": {
-                                "device_security_level": "SW_SECURE_DECODE",
+                                "device_security_level": "HW_SECURE_CRYPTO",
                             },
                             "playready": {
                                 "min_device_security_level": 2000,

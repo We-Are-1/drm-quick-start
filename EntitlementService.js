@@ -68,6 +68,9 @@
                     "content_key_usage_policies": [
                         {
                             "name": "Policy A",
+                            "widevine": {
+                                "device_security_level": "SW_SECURE_DECODE",
+                            },
                             "playready": {
                                 "min_device_security_level": 2000,
                                 "play_enablers": [

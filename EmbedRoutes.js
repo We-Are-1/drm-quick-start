@@ -136,7 +136,13 @@
                                                 'com.apple.fps': 'https://99b94032.drm-fairplay-licensing.axprod.net/AcquireLicense',
                                                 'com.widevine.alpha': 'https://99b94032.drm-widevine-licensing.axprod.net/AcquireLicense',
                                                 'com.microsoft.playready': 'https://99b94032.drm-playready-licensing.axprod.net/AcquireLicense'
-                                            }
+                                            },
+                                            advanced: {
+                                                'com.widevine.alpha': {
+                                                    videoRobustness: 'HW_SECURE_CRYPTO',
+                                                    audioRobustness: 'HW_SECURE_CRYPTO'
+                                                }
+                                            }        
                                         }
                                     };
 

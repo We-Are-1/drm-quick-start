@@ -69,7 +69,7 @@
                         {
                             "name": "Policy A",
                             "playready": {
-                                "min_device_security_level": 150,
+                                "min_device_security_level": 2000,
                                 "play_enablers": [
                                     "786627D8-C2A6-44BE-8F88-08AE255B01A7"
                                 ]
